@@ -1,0 +1,20 @@
+--Demonstrate use of Sqoop to export and import files to HDFS from the Database of your choice.
+--Import
+hdfs dfs -mkdir /user/hduser/Final_DA
+sqoop import-all-tables --connect jdbc:mysql://localhost:3306/retail_db --username root --password root --direct --warehouse-dir /user/hduser/Final_DA/Retail_db/ --exclude-tables newOrders,sudent --m 1 --verbose
+
+--Export
+sqoop export --connect jdbc:mysql://localhost:3306/Retail_Copy --username root --password root --table order_items --export-dir /user/hduser/Final_DA/Retail_db/order_items --m 1
+sqoop export --connect jdbc:mysql://localhost:3306/Retail_Copy --username root --password root --table order --export-dir /user/hduser/Final_DA/Retail_db/orders --m 2
+sqoop export --connect jdbc:mysql://localhost:3306/Retail_Copy --username root --password root --table order --export-dir /user/hduser/Final_DA/Retail_db/categories --m 3
+sqoop export --connect jdbc:mysql://localhost:3306/Retail_Copy --username root --password root --table order --export-dir /user/hduser/Final_DA/Retail_db/departments --m 4
+sqoop export --connect jdbc:mysql://localhost:3306/Retail_Copy --username root --password root --table order --export-dir /user/hduser/Final_DA/Retail_db/products --m 1
+sqoop export --connect jdbc:mysql://localhost:3306/Retail_Copy --username root --password root --table order --export-dir /user/hduser/Final_DA/Retail_db/customers --m 2
+
+
+--Hive Section
+--transfer file to HDFS to LFS using hadoop command
+hdfs dfs -get /user/hduser/Final_DA/Retail_db /home/hduser/Documents/Sapana/Retail_db
+
+--Partition and bucketing
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password root --table orders --hive-database retail_final --target-dir /user/hive/warehouse/retail_final.db/orders --hive-import --m 1

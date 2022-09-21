@@ -1,0 +1,30 @@
+//loading the tables in hive staging area;
+CREATE DATABASE Retail_db;
+//create tables
+CREATE TABLE IF NOT EXISTS order_items (order_item_id INT, order_item_order_id INT, order_item_product_id INT ,order_item_quantity INT , order_item_subtotal INT, order_item_product_price INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' STORED AS ORC;
+CREATE TABLE IF NOT EXISTS categories (category_id INT, category_department_id INT,category_name STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' STORED AS ORC;
+CREATE TABLE IF NOT EXISTS departments (department_id INT, department_name STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' STORED AS ORC;
+CREATE TABLE IF NOT EXISTS orders (order_id INT , order_date TIMESTAMP , order_customer_id INT , order_status STRING ) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' STORED AS ORC;
+CREATE TABLE IF NOT EXISTS order_items (order_item_id INT, order_item_order_id INT, order_item_product_id INT ,order_item_quantity INT , order_item_subtotal INT, order_item_product_price INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' STORED AS ORC;
+CREATE TABLE IF NOT EXISTS products (product_id INT, product_category_id INT,product_name STRING, product_description STRING, product_price DOUBLE, product_image STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' STORED AS ORC;
+CREATE TABLE IF NOT EXISTS customers (customer_id INT, customer_fname STRING ,customer_lname STRING, customer_email STRING, customer_password STRING, customer_street STRING, customer_city STRING, customer_state STRING, customer_zipcode STRING ) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' STORED AS ORC;
+
+//loading data from local path
+LOAD DATA LOCAL inpath '/home/hduser/Documents/Sapana/Retail_db/order_items' INTO TABLE order_items;
+LOAD DATA LOCAL inpath '/home/hduser/Documents/Sapana/Retail_db/orders' INTO TABLE orders;
+LOAD DATA LOCAL inpath '/home/hduser/Documents/Sapana/Retail_db/categories' INTO TABLE categories;
+LOAD DATA LOCAL inpath '/home/hduser/Documents/Sapana/Retail_db/products' INTO TABLE products;
+LOAD DATA LOCAL inpath '/home/hduser/Documents/Sapana/Retail_db/customers' INTO TABLE customers;
+LOAD DATA LOCAL inpath '/home/hduser/Documents/Sapana/Retail_db/departments' INTO TABLE departments;
+
+//Partitioning table
+Create Database retail_final;
+Use retail_final;
+CREATE TABLE  part_order ( order_id INT, order_date TIMESTAMP ,order_customer_id INT) PARTITIONED BY (order_status STRING);
+INSERT INTO TABLE part_order PARTITION(order_status) SELECT orders.order_id, orders.order_date, orders.order_customer_id, orders.order_status FROM orders;
+set hive.exec.dynamic.partition=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+
+//Bucketing table
+CREATE TABLE bucket_order (order_id INT, order_date TIMESTAMP ,order_customer_id INT) PARTITIONED BY(order_status STRING) CLUSTERED BY (order_id) into 3 BUCKETS;
+INSERT INTO TABLE bucket_order PARTITION (order_status) SELECT orders.order_id, orders.order_date, orders.order_customer_id, orders.order_status FROM orders;

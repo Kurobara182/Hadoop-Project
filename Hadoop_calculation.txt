@@ -1,0 +1,65 @@
+//create the total_revenue
+
+CREATE TABLE IF NOT EXISTS total_revenue (total_revenue INT);
+
+INSERT INTO TABLE total_revenue SELECT SUM(oi.order_item_subtotal) AS subtotal FROM order_items As oi JOIN orders AS o ON (o.order_id = oi.order_item_order_id) JOIN products AS p ON ( p.product_id =oi.order_item_product_id ) GROUP BY o.order_date;
+
+//create table according to the where customer are selected according to their expenses
+ 
+CREATE TABLE IF NOT EXISTS customer_expenses (order_id INT, Expenses STRING);
+
+INSERT INTO TABLE customer_expenses SELECT order_id, SUM(oi.order_item_subtotal) AS Expenses FROM order_items As oi JOIN orders AS o ON (o.order_id = oi.order_item_order_id) GROUP BY o.order_id;
+
+//create table customer_range where customer are selected as per expenses range
+CREATE TABLE IF NOT EXISTS customer_range(order_id INT, expenses_range STRING);
+Insert into customer_range select e.customer_id, 
+case
+   when e.expenses < 200 then 'Low'
+   when e.expenses > 200 and expenses < 350 then 'Average'
+   when e.expenses > 350 and expenses <500 then 'High'
+   else 'Very High'
+END AS EXPENSESRANGE FROM (
+select order_id, order_customer_id AS customer_id, sum(oi.order_item_subtotal) as expenses from orders AS o join order_items AS oi ON (o.order_id=oi.order_item_id) group by o.order_id ,o.order_customer_id
+) e;
+
+
+//create table profit to find profit range
+CREATE TABLE profit( profit_analysis STRING , order_item_subtotal INT);
+
+INSERT INTO TABLE profit Select
+case
+when order_item_subtotal <=250 then "Less_profit"
+when order_item_subtotal <=350 then "Average_profit"
+when order_item_subtotal<=500 then "Good_profit"
+when order_item_subtotal<=550 then "Maximum_profit"
+else 'limit exceed'
+end
+as profit_analysis,
+count(*) from order_items
+group by
+case
+when order_item_subtotal <=250 then "Less_profit"
+when order_item_subtotal <=350 then "Average_profit"
+when order_item_subtotal<=500 then "good_profit"
+when order_item_subtotal<=550 then "maximum_profit"
+else 'limit exceed'
+end;
+
+//create table pending_order to find pending order between specified date
+CREATE TABLE pending_order(department_name STRING, category_departmet_id INT, order_item_subtotal INT, order_date STRING);
+
+INSERT INTO TABLE pending_order
+SELECT d.department_name, COUNT(oi.order_item_id) as num_of_orders, sum(oi.order_item_subtotal) as total_sum, o.order_date
+FROM order_items oi  
+JOIN products p ON oi.order_item_product_id = p.product_id 
+JOIN categories c ON c.category_id = p.product_category_id 
+JOIN departments d ON d.department_id = c.category_department_id 
+JOIN orders o  ON o.order_id = oi.order_item_order_id 
+WHERE o.order_date between '2013/11/01' and '2014/07/23' 
+AND o.order_status = 'PENDING_PAYMENT'
+GROUP BY d.department_name, o.order_date;
+
+
+
+
+
